@@ -10,6 +10,10 @@ import numpy as np
 from moveit_msgs.msg import PlanningScene
 import scipy.spatial.transform as spt
 import tf
+import tf2_ros
+import tf2_geometry_msgs
+import tf.transformations as tft
+from sensor_msgs.msg import CameraInfo
 
 sys.path.append("/home/ros_ws/src/git_packages/frankapy")
 from frankapy import FrankaArm, SensorDataMessageType
@@ -72,11 +76,15 @@ class MoveItPlanner():
         
         #KEERTHI        
         self.fa.goto_joints(joint_goal, use_impedance=False)
-        
+
+    def goto_pose(self,pose_goal):
+
+        self.fa.goto_pose(pose_goal,duration=5,dynamic=True,buffer_time=10)
+           
     #KEERTHI
-    def goto_pose(self):
+    def goto_pose_test(self):
         self.fa.open_gripper()
-        self.fa.reset_joints()
+        # self.fa.reset_joints()
         initial_joint = self.fa.get_joints()
         print(f'Initial joint: {initial_joint}')
         
@@ -394,7 +402,7 @@ class MoveItPlanner():
         self.scene.add_mesh(name, pose, filename, size=[1,1,1])
 
     def remove_box(self, name):
-        self.scene.remove_world_object(name)
+        self.scene.remove_world_object(name)     
     
     def get_transform(self,):
 
@@ -407,6 +415,38 @@ class MoveItPlanner():
         transform_link0_to_ee = tf.transformations.compose_matrix(translate=trans_link0_to_ee, angles=tf.transformations.euler_from_quaternion(rot_link0_to_ee))
         
         return transform_link0_to_ee
+
+    def transform_to_matrix(self,transform):
+        translation = transform.transform.translation
+        rotation = transform.transform.rotation
+        
+        rotation_matrix = tft.quaternion_matrix([rotation.x, rotation.y, rotation.z, rotation.w])
+
+        T_matrix = np.eye(4)
+        T_matrix[:3, :3] = rotation_matrix[:3, :3]
+        T_matrix[:3, 3] = [translation.x, translation.y, translation.z]
+        
+        return T_matrix
+
+    def get_transform_tf2(self,):
+        tf_buffer = tf2_ros.Buffer()
+        tf_listener = tf2_ros.TransformListener(tf_buffer)
+        rospy.sleep(1)
+        try:
+            transform = tf_buffer.lookup_transform('panda_link0', 'panda_end_effector', rospy.Time(0))
+
+            T_link0_ee = self.transform_to_matrix(transform)
+            T_ee_camera = np.eye(4)
+            R = np.array([[0, 1, 0], [-1, 0, 0], [0, 0, 1]])
+            T_ee_camera[:3, :3] = R
+            T_ee_camera[:3, 3] = np.array([-0.04, 0, -0.06])
+            T = T_link0_ee @ T_ee_camera
+            return T, T_ee_camera
+
+        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
+            #rospy.logerr("Transform error: %s", e)
+            return None
+    
     def add_collision_boxes(self):
         base_pose = geometry_msgs.msg.PoseStamped()
         base_pose.header.frame_id = "panda_link0"

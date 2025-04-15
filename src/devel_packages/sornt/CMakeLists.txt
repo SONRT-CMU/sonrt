@@ -21,15 +21,6 @@ catkin_install_python(PROGRAMS
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
-catkin_install_python(PROGRAMS
-  src/robot_joint_converter.py
-  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
-
-catkin_install_python(PROGRAMS
-  src/realsense_tf_publisher.py
-  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
 
 catkin_install_python(PROGRAMS
   src/moveit_test.py
@@ -37,7 +28,12 @@ catkin_install_python(PROGRAMS
 )
 
 catkin_install_python(PROGRAMS
-  src/shelf.py
+  src/utils/shelf.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
+catkin_install_python(PROGRAMS
+  src/vision/color_point.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

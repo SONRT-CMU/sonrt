@@ -10,7 +10,9 @@ import numpy as np
 import time
 from visualization_msgs.msg import Marker
 
-from src.devel_packages.sornt.src.shelf import Shelf
+from src.devel_packages.sornt.src.utils.shelf import Shelf
+
+# from utils.shelf import Shelf
 
 from geometry_msgs.msg import Point, PointStamped
 from sensor_msgs.msg import Image, CameraInfo
@@ -28,10 +30,7 @@ class Sort_MoveIt():
         self.add_collision_boxes(shelf.shelf_as_collision_boxes())
     
     def move_to_second_home(self):
-        # second_home, _ = self.franka_moveit.get_plan_given_joint([0.09446621,  0.23436419,  0.51143809, -2.13887694, -1.22993535,  1.01465016, 0.07993947])
-        # self.franka_moveit.execute_plan(second_home)
         
-        #KEERTHI
         joint_goal = [0.09446621,  0.23436419,  0.51143809, -2.13887694, -1.22993535,  1.01465016, 0.07993947]
         self.franka_moveit.goto_joint(joint_goal)
         
@@ -59,7 +58,6 @@ class Sort_MoveIt():
         return current_pose
     
     
-    #KEERTHI
     def goto_pose(self, centroid):
         # Get current end effector pose
         ee_to_base_transform = self.franka_moveit.get_pose()
@@ -122,18 +120,32 @@ class Sort_MoveIt():
         # No planning or execution, just return success
         return des_pose
     
-    def get_pose_in_moveit_frame_from_end_effector_frame(self, pose: geometry_msgs.msg.Pose) -> geometry_msgs.msg.Pose:
+    def get_pose_in_base_frame_from_end_effector_frame(self, pose: geometry_msgs.msg.Pose) -> geometry_msgs.msg.Pose:
         end_effector_in_base_frame = self.franka_moveit.get_transform()
+        # [-0.09, 0.05, 0.04]
         transform_mat =  np.array([[1,0,0,0],
                                    [0,1,0,0],
                                    [0,0,1,-0.1034],
                                    [0,0,0,1]])
+        camera_to_end_effector = np.array([[1,0,0,+0.05],
+                                            [0,1,0,-0.0],
+                                            [0,0,1,-0.055],
+                                            [0,0,0,1]])
         pose_as_matrix = self.franka_moveit.pose_to_transformation_matrix(pose)
+        print(end_effector_in_base_frame)
+
         #TODO: Check matmuls
-        pose_as_matrix_in_moveit_frame = pose_as_matrix @ transform_mat @ end_effector_in_base_frame
+        pose_as_matrix_in_moveit_frame = pose_as_matrix  @ end_effector_in_base_frame
         pose_in_moveit_frame = self.franka_moveit.transformation_matrix_to_pose(pose_as_matrix_in_moveit_frame)
-        print(pose_in_moveit_frame)
+        # print(pose_in_moveit_frame)
         return pose_in_moveit_frame
+    
+    def convert_point_to_pose(self, point):
+        pose = geometry_msgs.msg.Pose() # Orientation initialized to 0,0,0,1 (quaternion)
+        pose.position = point # Replace the position with the given point
+        pose.orientation.w = 1.0
+
+        return pose
     
     def goto_point(self, point: geometry_msgs.msg.Point) -> None:
         # Point is given in the base frame
@@ -222,8 +234,6 @@ if __name__ == "__main__":
     
 
     # # Print Current Robot State (Joint Values and End Effector Pose)
-    # sort = Sort_MoveIt()
-    # sort.franka_moveit.print_robot_state()
     
     # # Add collision boxes
     # sort.franka_moveit.add_collision_boxes()
@@ -263,25 +273,28 @@ if __name__ == "__main__":
     
     # sort.franka_moveit.fa.open_gripper()
     
-    
-    #KEERTHI
     shelf_env = Shelf()
+
     sort = Sort_MoveIt(shelf_env)
-    # sort.franka_moveit.get_pose()
-    # sort.franka_moveit.reset_joints()
-    # sort.franka_moveit.print_robot_state()
+    sort.franka_moveit.print_robot_state()
        
-    # sort.move_to_second_home()
+    sort.move_to_second_home()
     # time.sleep(1)
     
     # breakpoint()
-    # orange_centroid = sort.get_value_for_orange_centroid()
+    orange_centroid = sort.get_value_for_orange_centroid()
+    
     # print(f"Orange Centroid: {orange_centroid}")
+    print(orange_centroid)
     
-    des_pose = sort.goto_pose(orange_centroid) 
-    # print(f"Desired Pose: {des_pose}")   
-    sort.franka_moveit.goto_pose()
+    T, T_ee_camera = sort.franka_moveit.get_transform_tf2()
     
+    p_ee = np.array([orange_centroid.x, orange_centroid.y, orange_centroid.z, 1]).T
+    
+    print(T@p_ee)
+    
+    
+
     
 
 #catkin_make && source devel/setup.bash && rosrun sornt moveit_test.py 
