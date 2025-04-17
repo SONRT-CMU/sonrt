@@ -79,8 +79,10 @@ class MoveItPlanner():
 
     def goto_pose(self,pose_goal):
 
-        self.fa.goto_pose(pose_goal,duration=5,dynamic=True,buffer_time=10)
+        # self.fa.goto_pose(pose_goal,duration=5,dynamic=True,buffer_time=10)
            
+        self.fa.goto_pose(pose_goal, use_impedance=False)   
+        
     #KEERTHI
     def goto_pose_test(self):
         self.fa.open_gripper()

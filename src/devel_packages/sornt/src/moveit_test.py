@@ -55,6 +55,71 @@ class Sort_MoveIt():
         current_pose.orientation.w = rot[3]
         
         return current_pose
+    
+    #KEERTHI
+    def get_camtobase_transform(self):
+        ee_transform = self.franka_moveit.fa.get_pose()
+        T_ee_base = ee_transform.matrix 
+        print("T_ee_base:", T_ee_base)  
+        T_camera_ee = np.eye(4)
+        T_camera_ee[:3, 3] = np.array([0.03, -0.03, -0.01])
+        # T_camera_ee[:3, 3] = np.array([-0.04742764, 0.10384115, 0.032812011])
+        T_camera_to_base = T_ee_base @ T_camera_ee
+        
+        return T_camera_to_base
+
+    
+    #KEERTHI
+    def pickandplace(self, point, T):
+        print("point in camera:", point)
+        
+        
+        
+        # p_camera = np.array([orange_centroid.x, orange_centroid.y, orange_centroid.z, 1])
+        # p_base = T @ p_camera
+        # print("T_camera_to_base:", T)
+        # print("point in base:", p_base)
+            
+        # des_pose = RigidTransform(
+        #         rotation=np.array([
+        #             [-0.02110541,  0.99952769, -0.02190237],
+        #             [-0.07263959, -0.02338222, -0.99708407],
+        #             [-0.99712527, -0.01945289, 0.07310018]
+        #         ]),
+        #         translation=p_base[:3].tolist(), 
+        #         from_frame='franka_tool', 
+        #         to_frame='world'
+        #     )
+        # sort.franka_moveit.reset_joints()
+        # sort.franka_moveit.goto_pose(des_pose)    
+        # sort.franka_moveit.fa.close_gripper()
+        
+        # current_pose = sort.franka_moveit.get_pose()
+        # lift_translation = current_pose.translation.copy()
+        # lift_translation[2] += 0.05
+        # lift_pose = RigidTransform(
+        #     rotation=current_pose.rotation,
+        #     translation=lift_translation, 
+        #     from_frame='franka_tool',
+        #     to_frame='world'
+        # )
+        # sort.franka_moveit.goto_pose(lift_pose)
+        
+        # sort.move_to_second_home()
+        # sort.franka_moveit.goto_joint(position3)
+        # sort.franka_moveit.fa.open_gripper()
+        
+        # current_pose = sort.franka_moveit.get_pose()
+        # preplace_translation = current_pose.translation.copy()
+        # preplace_translation[1] += 0.10
+        # preplace_pose = RigidTransform(
+        #     rotation=current_pose.rotation,
+        #     translation=preplace_translation, 
+        #     from_frame='franka_tool',
+        #     to_frame='world'
+        # )        
+        # sort.franka_moveit.goto_pose(preplace_pose)
+        # sort.move_to_second_home()
 
     
     def convert_point_to_pose(self, point):
@@ -134,28 +199,42 @@ class Sort_MoveIt():
     
 if __name__ == "__main__":
     
-
     
     shelf_env = Shelf()
 
     sort = Sort_MoveIt(shelf_env)
+    sort.franka_moveit.reset_joints()
     sort.franka_moveit.print_robot_state()
+    
+    position1 = [ 0.04932081,  0.41680444, -0.28264505, -1.80764826, -1.65895955,  1.76036052, -0.13009759]
+    position2 = [ 0.56087855,  0.0201718,  -0.83533652, -2.35995647, -1.76507356,  1.71175639,  0.02144443]
+    position3 = [ 0.0267715,  -0.48488081, -0.38927448, -2.78192472, -1.88040301,  1.66381664, -0.12541168]
+    position4 = [ 0.15417526,  1.00905677, -0.36440428, -1.62995756, -1.50209554,  1.81501208,  0.19394939]
+    position5 = [ 0.63118503,  0.94457377, -0.83804126, -2.16908984, -1.25600768,  2.19826817,  0.40085538]
+    position6 = [ 0.09193547,  0.55592332, -0.35134907, -2.57623927, -1.769613,    1.81996532,  0.77395573]
        
-    sort.move_to_second_home()
+    # sort.move_to_second_home()
 
-    orange_centroid = sort.get_value_for_orange_centroid()
+    # des_pose = RigidTransform(
+    #     rotation=np.array([
+    #         [-0.01725819,  0.99810282, -0.05893836],
+    #         [ 0.03908043, -0.05822814, -0.99753802],
+    #         [-0.99907739, -0.01951904, -0.03800211]
+    #     ]),
+    #     translation=[ 0.46596075, -0.529291366,  -0.04 ], 
+    #     from_frame='franka_tool', 
+    #     to_frame='world'
+    #     )
+    # sort.franka_moveit.reset_joints()
+    # sort.franka_moveit.goto_pose(des_pose)
     
-    print(orange_centroid)
-    
-    T, T_ee_camera = sort.franka_moveit.get_transform_tf2()
-    
-    p_ee = np.array([orange_centroid.x, orange_centroid.y, orange_centroid.z, 1]).T
-    
-    print(T@p_ee)
-    
-    
+    # for i in range(3):            
+    #     print("i:", i)
+    #     orange_centroid = sort.get_value_for_orange_centroid()  
+    #     T = sort.get_camtobase_transform()        
+    #     sort.pickandplace(orange_centroid, T)
+    #     time.sleep(5)
 
-    
 
 #catkin_make && source devel/setup.bash && rosrun sornt moveit_test.py 
 
