@@ -80,49 +80,6 @@ class MoveItPlanner():
     def goto_pose(self,pose_goal):
 
         self.fa.goto_pose(pose_goal,duration=5,dynamic=True,buffer_time=10)
-           
-    #KEERTHI
-    def goto_pose_test(self):
-        self.fa.open_gripper()
-        # self.fa.reset_joints()
-        initial_joint = self.fa.get_joints()
-        print(f'Initial joint: {initial_joint}')
-        
-        home_joint = [0.09446621,  0.23436419,  0.51143809, -2.13887694, -1.22993535,  1.01465016, 0.07993947]
-        self.goto_joint(home_joint)
-        print(f'Home joint: {home_joint}')
-        
-        self.fa.reset_joints()
-        des_pose = RigidTransform(rotation=np.array([
-            [-0.02110541, 0.99952769, -0.02190237],
-            [-0.07263959, -0.02338222, -0.99708407],
-            [-0.99712527, -0.01945289, 0.07310018]]),
-        # translation=[0.45209972, 0.04327647, 0.36306605],
-        translation=[0.54990976, -0.38635197, 0.40136056],
-        # translation=[0.6520895, 0.24325199, 0.16303764],
-        from_frame='franka_tool', 
-        to_frame='world'
-    )
-        self.fa.goto_pose(des_pose, use_impedance=False)
-        des_joint = self.fa.get_joints()
-        print(f'Desired joint: {des_joint}')
-        
-        self.goto_joint(initial_joint)
-        self.goto_joint(home_joint)
-        self.goto_joint(des_joint)
-        self.fa.close_gripper()
-        self.goto_joint(home_joint)
-        self.goto_joint(des_joint)
-        self.fa.open_gripper() 
-        self.goto_joint(home_joint)
-        self.goto_joint(initial_joint)
-        
-        
-    #KEERTHI
-    def get_pose(self):
-        des_pose = self.fa.get_pose()
-        print(f'Current pose: {des_pose}')
-        return des_pose
         
     
     def get_plan_given_pose(self, pose_goal: geometry_msgs.msg.Pose):

@@ -31,8 +31,16 @@ class Sort_MoveIt():
     
     def move_to_second_home(self):
         
-        joint_goal = [0.09446621,  0.23436419,  0.51143809, -2.13887694, -1.22993535,  1.01465016, 0.07993947]
+        # joint_goal = [0.09446621,  0.23436419,  0.51143809, -2.13887694, -1.22993535,  1.01465016, 0.07993947]
+        # joint_goal = [0.36640268, 0.38592696, 0.49458685, -1.81152975, -1.12258912, 0.85101375, 0.04232636]
+        joint_goal = [0.389478, 0.33705704, 0.34117744, -1.90028557, -1.17125388, 0.96495198, 0.05239409]
+
         self.franka_moveit.goto_joint(joint_goal)
+
+    def move_to_third_home(self):
+        joint_goal = [0.39537147, 0.88145527, 0.27661472, -1.74497851, -1.17776832, 1.1262399, 0.42056621]
+        self.franka_moveit.goto_joint(joint_goal)
+
         
     def get_current_ee_pose(self):
         # Set up a tf listener
@@ -56,23 +64,18 @@ class Sort_MoveIt():
         
         return current_pose
 
-    
-    def convert_point_to_pose(self, point):
-        pose = geometry_msgs.msg.Pose() # Orientation initialized to 0,0,0,1 (quaternion)
-        pose.position = point # Replace the position with the given point
-        pose.orientation.w = 1.0
-
-        return pose
 
     def pick_at_point(self, point: geometry_msgs.msg.Point) -> None:
         # Goto point
-        self.goto_point(point)        
+        self.franka_moveit.fa.goto_pose(point)        
         # Close gripper
+        time.sleep(0.5)
         self.franka_moveit.fa.close_gripper()
         
     def place_at_point(self, point: geometry_msgs.msg.Point) -> None:
         # Goto point
-        self.goto_point(point)
+        self.franka_moveit.fa.goto_pose(point)
+        time.sleep(0.5)
         # Open gripper
         self.franka_moveit.fa.open_gripper()
     
@@ -80,22 +83,9 @@ class Sort_MoveIt():
         # collision_boxes = list(str, Pose, list)
         for name, pose, dimensions in collision_boxes:
             self.franka_moveit.add_box(name, pose, dimensions)
-        
-    def get_hardcoded_point(self) -> geometry_msgs.msg.Point:
-        # Hardcoded point in the end effector frame
-        x = 0
-        y = 0
-        z = 0.10
-        # pose = geometry_msgs.msg.PoseStamped()
-        # pose.header.frame_id = "panda_end_effector"
-        # pose.pose.position.x = x
-        # pose.pose.position.y = y
-        # pose.pose.position.z = z
-        # pose.pose.orientation.x = 1.0  # Default orientation
-        # self.franka_moveit.add_box("hardcoded_point", pose, size=[0.01, 0.01, 0.01])  # Add a small box for visualization
-        return geometry_msgs.msg.Point(x, y, z)
     
-    def get_value_for_orange_centroid(self):
+    
+    def get_orange_centroid(self):
         """
         Retrieve the 3D coordinates of the orange object centroid.
         
@@ -130,6 +120,48 @@ class Sort_MoveIt():
         
         # Return the point
         return centroid_data['point']
+    
+    def pickup(self):
+        # Get the orange centroid
+        orange_centroid = self.get_orange_centroid()
+        
+        if orange_centroid is None:
+            rospy.logerr("Failed to get orange centroid")
+            return 
+        
+        T, T_ee_camera = sort.franka_moveit.get_transform_tf2()
+
+        p_ee = np.array([orange_centroid.x, orange_centroid.y, orange_centroid.z, 1]).T
+        pickup_point = T@p_ee
+        pickup_position = pickup_point[:3] / pickup_point[3]
+        pickup_position[0] -= 0.02
+        pickup_position[2] += 0.02
+        pickup_position[1] -= 0.04
+        
+        # Pick at the point
+        current_pose = self.franka_moveit.fa.get_pose()
+        pickup_pose = RigidTransform(
+        rotation=current_pose.rotation,
+        translation=pickup_position,
+        from_frame='franka_tool',
+        to_frame='world')
+
+        # sort.franka_moveit.fa.goto_pose(pickup_pose)
+        self.pick_at_point(pickup_pose)
+
+        time.sleep(0.5)
+        # Move the robot 5 cm above the pickup position
+        pickup_position[2] += 0.05  # Add 5 cm to the z-coordinate
+        above_pickup_pose = RigidTransform(
+            rotation=current_pose.rotation,
+            translation=pickup_position,
+            from_frame='franka_tool',
+            to_frame='world')
+
+        self.franka_moveit.fa.goto_pose(above_pickup_pose)
+
+
+
 
     
 if __name__ == "__main__":
@@ -139,19 +171,45 @@ if __name__ == "__main__":
     shelf_env = Shelf()
 
     sort = Sort_MoveIt(shelf_env)
-    sort.franka_moveit.print_robot_state()
+    # sort.franka_moveit.print_robot_state()
        
     sort.move_to_second_home()
+    sort.pickup()
+    time.sleep(0.5)
+    sort.move_to_second_home()
+    sort.move_to_third_home()
+    sort.franka_moveit.fa.open_gripper()
 
-    orange_centroid = sort.get_value_for_orange_centroid()
+
+    # NOTE: Position 5 (Bottom shelf middle)
+    # Enter a number: 1
+    # pose: 
+    # Tra: [ 0.46596075 -0.29291366  0.0993864 ]
+    # Rot: [[-0.01725819  0.99810282 -0.05893836]
+    # [ 0.03908043 -0.05822814 -0.99753802]
+    # [-0.99907739 -0.01951904 -0.03800211]]
+
+
+    position = [0.46596075, -0.29291366, 0.0993864]
+    rotation = [
+        [-0.01725819,  0.99810282, -0.05893836],
+        [ 0.03908043, -0.05822814, -0.99753802],
+        [-0.99907739, -0.01951904, -0.03800211]
+    ]
+
+    pose = RigidTransform(
+        rotation=np.array(rotation),
+        translation=np.array(position),
+        from_frame='franka_tool',
+        to_frame='world'
+    )
+
+    # Use the pose with FrankaPy
+    # sort.franka_moveit.fa.goto_pose(pose)
+        
     
-    print(orange_centroid)
     
-    T, T_ee_camera = sort.franka_moveit.get_transform_tf2()
     
-    p_ee = np.array([orange_centroid.x, orange_centroid.y, orange_centroid.z, 1]).T
-    
-    print(T@p_ee)
     
     
 
