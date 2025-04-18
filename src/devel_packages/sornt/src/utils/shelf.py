@@ -31,6 +31,7 @@ class Shelf():
             collision_boxes.append((name, pose, [params[7], params[8], params[9]]))
         
         return collision_boxes
+    
         
         # base_pose = PoseStamped()
         # base_pose.header.frame_id = "panda_link0"

@@ -79,7 +79,7 @@ class MoveItPlanner():
 
     def goto_pose(self,pose_goal):
 
-        self.fa.goto_pose(pose_goal,duration=5,dynamic=True,buffer_time=10)
+        self.fa.goto_pose(pose_goal,duration=7,dynamic=True,buffer_time=10,use_impedance=False)
         
     
     def get_plan_given_pose(self, pose_goal: geometry_msgs.msg.Pose):

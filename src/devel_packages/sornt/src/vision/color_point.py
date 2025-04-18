@@ -33,6 +33,25 @@ class ColorTracker3DNode:
                 np.array([10, 90, 20]),  # lower_brown 
                 np.array([30, 255, 200]),  # upper_brown
                 (42, 42, 165)  # Display color (BGR): Brown
+            ),
+            #Green
+            'green': (
+                np.array([45, 100, 50]),  # lower_green 
+                np.array([75, 255, 255]),  # upper_green
+                (0, 255, 0)  # Display color (BGR): Green
+            ),
+
+            #Blue
+            'blue': (
+                np.array([94, 100, 50]),  # lower_blue
+                np.array([130, 255, 255]),  # upper_blue
+                (255, 0, 0)  # Display color (BGR): Blue
+            ),
+            #Red
+            'red': (
+                np.array([0, 150, 10]),  # lower_red
+                np.array([35, 255, 255]),  # upper_red
+                (255, 0, 0)  # Display color (BGR): Red
             )
         }
         
